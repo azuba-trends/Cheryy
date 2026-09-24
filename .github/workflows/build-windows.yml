@@ -4,8 +4,9 @@
 # `installer/build_installer.ps1` so the CI build is the same process a
 # developer would run locally):
 #   1.  Install Python, Node, Rust stable + MSVC build tools.
-#   2.  Generate the placeholder icon set that `tauri.conf.json` references.
-#   3.  Backend: create venv, install (editable), install PyInstaller.
+#   2.  Backend: create venv, install (editable), install PyInstaller + pytest.
+#   3.  Generate the placeholder icon set that `tauri.conf.json` references
+#       (uses the backend venv's Python so Pillow is already available).
 #   4.  Backend: run pytest as a quality gate.
 #   5.  Frontend: `npm install` then `npm run build`.
 #   6.  Bundle the backend with PyInstaller (`cheryy/bootstrap.py`).
@@ -24,7 +25,7 @@ name: CHERYY Windows build
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     tags: ['v*']
   workflow_dispatch:
 
@@ -88,10 +89,6 @@ jobs:
         with:
           arch: x64
 
-      - name: Prepare placeholder icons
-        shell: pwsh
-        run: python installer\prepare_icons.py
-
       # -----------------------------------------------------------------
       # Backend
       # -----------------------------------------------------------------
@@ -101,11 +98,21 @@ jobs:
           python -m venv .venv
           .\.venv\Scripts\python.exe -m pip install --upgrade pip wheel setuptools
 
-      - name: Backend — install (editable + pyinstaller + dev deps)
+      - name: Backend — install (editable)
         working-directory: backend
         run: |
           .\.venv\Scripts\python.exe -m pip install -e .
+          # Editing this is what installs Pillow (via backend's pyproject.toml
+          # dependencies). The icon generator below relies on this.
+
+      - name: Backend — install pyinstaller + test deps
+        working-directory: backend
+        run: |
           .\.venv\Scripts\python.exe -m pip install pyinstaller pytest pytest-asyncio
+
+      - name: Prepare placeholder icons (uses backend venv Python → Pillow is present)
+        shell: pwsh
+        run: backend\.venv\Scripts\python.exe installer\prepare_icons.py
 
       - name: Backend — run tests
         working-directory: backend
