@@ -1,0 +1,25 @@
+{
+  "name": "windows",
+  "version": "0.1.0",
+  "description": "Windows computer control: mouse, keyboard, screen capture, UI tree.",
+  "tools": [
+    "computer.get_screen",
+    "computer.get_windows",
+    "computer.get_active_window",
+    "computer.get_ui_tree",
+    "computer.move_mouse",
+    "computer.click",
+    "computer.double_click",
+    "computer.right_click",
+    "computer.drag",
+    "computer.scroll",
+    "computer.type",
+    "computer.hotkey"
+  ],
+  "examples": [
+    "Open Notepad and paste the article",
+    "Move the Chrome window to the left monitor",
+    "Click the Save button in the active window"
+  ],
+  "enabled": true
+}

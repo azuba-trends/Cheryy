@@ -1,0 +1,13 @@
+{
+  "name": "wordpress",
+  "version": "0.1.0",
+  "description": "WordPress publishing via REST API + Application Password.",
+  "tools": [
+    "publisher.wordpress_publish"
+  ],
+  "examples": [
+    "Open WordPress and publish the draft",
+    "Upload the featured image and publish the article"
+  ],
+  "enabled": true
+}

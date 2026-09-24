@@ -1,0 +1,18 @@
+{
+  "name": "office",
+  "version": "0.1.0",
+  "description": "Create and validate DOCX, PPTX, XLSX, and PDF documents with strict quality control.",
+  "tools": [
+    "office.create_docx",
+    "office.create_pptx",
+    "office.create_xlsx",
+    "office.create_pdf"
+  ],
+  "examples": [
+    "Create a PowerPoint about AI in digital marketing",
+    "Write a professional blog post and save it as DOCX",
+    "Make an Excel report from this CSV",
+    "Export this report as PDF"
+  ],
+  "enabled": true
+}

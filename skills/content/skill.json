@@ -1,0 +1,17 @@
+{
+  "name": "content",
+  "version": "0.1.0",
+  "description": "Writing and SEO: blogs, articles, emails, social posts, summaries.",
+  "tools": [
+    "content.blog",
+    "content.seo",
+    "content.write",
+    "content.summarize"
+  ],
+  "examples": [
+    "Write a professional email draft",
+    "Summarise this PDF",
+    "Create an SEO article about remote work"
+  ],
+  "enabled": true
+}

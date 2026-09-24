@@ -1,0 +1,22 @@
+{
+  "name": "browser",
+  "version": "0.1.0",
+  "description": "Playwright DOM-first browser automation. Prefers selectors over coordinates.",
+  "tools": [
+    "browser.open",
+    "browser.navigate",
+    "browser.read",
+    "browser.click",
+    "browser.type",
+    "browser.select",
+    "browser.upload",
+    "browser.download",
+    "browser.screenshot"
+  ],
+  "examples": [
+    "Open Chrome and find the top 5 generative AI tools",
+    "Log into WordPress and publish the draft",
+    "Read this URL and summarise it"
+  ],
+  "enabled": true
+}

@@ -1,0 +1,3 @@
+[console_scripts]
+cheryy-cli = cheryy.cli:main
+cheryy-server = cheryy.bootstrap:main

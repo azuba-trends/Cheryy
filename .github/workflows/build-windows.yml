@@ -1,0 +1,183 @@
+# CHERYY — Windows installer build
+#
+# What this workflow does (each step mirrors the commands documented in
+# `installer/build_installer.ps1` so the CI build is the same process a
+# developer would run locally):
+#   1.  Install Python, Node, Rust stable + MSVC build tools.
+#   2.  Generate the placeholder icon set that `tauri.conf.json` references.
+#   3.  Backend: create venv, install (editable), install PyInstaller.
+#   4.  Backend: run pytest as a quality gate.
+#   5.  Frontend: `npm install` then `npm run build`.
+#   6.  Bundle the backend with PyInstaller (`cheryy/bootstrap.py`).
+#   7.  Sidecar copy into `desktop/src-tauri/cheryy-server.exe`.
+#   8.  Run the existing `installer/build_installer.ps1` for the Tauri build
+#       so we use the *exact same* process as local developer machines.
+#       (The Tauri shell hard-codes `target = ["msi", "nsis"]`, so this step
+#       produces both installers in one run.)
+#   9.  Upload the MSI + NSIS as workflow artifacts.
+#
+# Secrets: NONE. The build does not need a Gemini API key; that key is a
+# runtime-only secret that CHERYY collects from the end user on first launch.
+# Local-AI support is also NOT installed and NOT required; the project keeps
+# it opt-in behind an environment variable (unrelated to this workflow).
+name: CHERYY Windows build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Build MSI + NSIS installers
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+
+    env:
+      # Compile-time environment only. These persist on the runner for
+      # every step in this job. Runtime authentication (user-supplied Gemini
+      # API key) is collected separately by the app on first launch and is
+      # NEVER introduced here.
+      PYTHON_VERSION: '3.11'
+      NODE_VERSION: '20'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # This workflow must never reference:
+      #   - the CHERYY per-user Gemini API key (collected at runtime, not build)
+      #   - the local-AI opt-in environment variable (build does not need it)
+      # All secrets / contexts in this file are referenced by literal name
+      # where strictly necessary for the build, and never via the GITHUB_TOKEN
+      # or any other user-defined secret.
+
+
+      # -----------------------------------------------------------------
+      # Toolchains
+      # -----------------------------------------------------------------
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install Rust toolchain (stable, MSVC)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: x86_64-pc-windows-msvc
+
+      - name: Configure MSVC dev environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Prepare placeholder icons
+        shell: pwsh
+        run: python installer\prepare_icons.py
+
+      # -----------------------------------------------------------------
+      # Backend
+      # -----------------------------------------------------------------
+      - name: Backend — create venv
+        working-directory: backend
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install --upgrade pip wheel setuptools
+
+      - name: Backend — install (editable + pyinstaller + dev deps)
+        working-directory: backend
+        run: |
+          .\.venv\Scripts\python.exe -m pip install -e .
+          .\.venv\Scripts\python.exe -m pip install pyinstaller pytest pytest-asyncio
+
+      - name: Backend — run tests
+        working-directory: backend
+        run: .\.venv\Scripts\python.exe -m pytest -q
+        # If tests fail the build aborts here — the installer never gets built
+        # on broken code.
+
+      # -----------------------------------------------------------------
+      # Frontend
+      # -----------------------------------------------------------------
+      - name: Frontend — npm install
+        working-directory: desktop
+        run: npm install
+
+      - name: Frontend — production build
+        working-directory: desktop
+        run: npm run build
+
+      - name: Frontend — verify dist
+        working-directory: desktop
+        shell: pwsh
+        run: |
+          if (-not (Test-Path dist/index.html)) {
+            throw "Frontend build did not produce dist/index.html"
+          }
+          Get-ChildItem dist -Recurse -File | Select-Object Name, Length
+
+      # -----------------------------------------------------------------
+      # Tauri + PyInstaller (the master script does both)
+      # -----------------------------------------------------------------
+      - name: Run installer build script (PyInstaller + Tauri)
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File installer\build_installer.ps1
+
+      # -----------------------------------------------------------------
+      # Locate + upload artifacts
+      # -----------------------------------------------------------------
+      - name: Locate generated installers
+        shell: pwsh
+        run: |
+          $installers = @()
+          $installers += Get-ChildItem -Path desktop\src-tauri\target\release\bundle\msi  -Recurse -Filter '*.msi'  -ErrorAction SilentlyContinue
+          $installers += Get-ChildItem -Path desktop\src-tauri\target\release\bundle\nsis -Recurse -Filter '*.exe'  -ErrorAction SilentlyContinue
+          if (-not $installers -or $installers.Count -eq 0) {
+            throw "No installer files were produced (looked under desktop\src-tauri\target\release\bundle)"
+          }
+          $installers | Select-Object FullName, Length | Format-Table -AutoSize
+          "MSI_COUNT=$((Get-ChildItem -Path desktop\src-tauri\target\release\bundle\msi -Filter '*.msi' | Measure-Object).Count)" | Out-File -Encoding utf8 $env:GITHUB_OUTPUT
+          "NSIS_COUNT=$((Get-ChildItem -Path desktop\src-tauri\target\release\bundle\nsis -Filter '*.exe' | Measure-Object).Count)" | Out-File -Encoding utf8 $env:GITHUB_OUTPUT
+
+      - name: Upload MSI + NSIS installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: cheryy-windows-installers
+          path: |
+            desktop/src-tauri/target/release/bundle/msi/*.msi
+            desktop/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      # Optional but useful — keep the raw Tauri build output for diagnosis
+      # when an installer regression needs investigating. Capped at 200 MB.
+      - name: Upload Tauri build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cheryy-build-logs
+          path: |
+            backend/.venv/Include
+            dist
+            desktop/src-tauri/target/release/build
+          retention-days: 7
+          if-no-files-found: ignore

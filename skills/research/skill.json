@@ -1,0 +1,17 @@
+{
+  "name": "research",
+  "version": "0.1.0",
+  "description": "Web research: search, fetch pages, extract facts, compare sources.",
+  "tools": [
+    "research.search_web",
+    "research.read_page",
+    "research.extract",
+    "research.compare"
+  ],
+  "examples": [
+    "Research the top 5 trends in generative AI",
+    "Compare pricing pages of these three vendors",
+    "Read https://example.com and summarise it"
+  ],
+  "enabled": true
+}

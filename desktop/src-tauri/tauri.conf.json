@@ -1,0 +1,73 @@
+{
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:5173",
+    "distDir": "../dist"
+  },
+  "package": {
+    "productName": "CHERYY",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": false,
+        "execute": false,
+        "open": false
+      },
+      "window": {
+        "all": true
+      },
+      "fs": {
+        "all": false,
+        "readFile": false,
+        "writeFile": false
+      }
+    },
+    "bundle": {
+      "active": true,
+      "category": "Productivity",
+      "copyright": "© CHERYY",
+      "shortDescription": "Personal AI office assistant.",
+      "longDescription": "CHERYY is a personal autonomous AI office assistant that uses your Gemini API key to perform voice-first desktop work: documents, browsing, and computer control — with a hard no-delete guarantee.",
+      "targets": ["msi", "nsis"],
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": "",
+        "wix": {
+          "language": ["en-US"]
+        }
+      },
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ]
+    },
+    "security": {
+      "csp": null
+    },
+    "updater": {
+      "active": false
+    },
+    "windows": [
+      {
+        "title": "CHERYY",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 1024,
+        "minHeight": 640,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false,
+        "alwaysOnTop": false
+      }
+    ]
+  }
+}
