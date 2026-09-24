@@ -28,6 +28,7 @@
     },
     "bundle": {
       "active": true,
+      "identifier": "com.azubatrends.cheryy",
       "category": "Productivity",
       "copyright": "© CHERYY",
       "shortDescription": "Personal AI office assistant.",
