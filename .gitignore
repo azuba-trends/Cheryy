@@ -87,4 +87,8 @@ $RECYCLE.BIN/
 *.swo
 *.swn
 *~
+# Generic `.lock` rule (matches editor/process lock files only).
 *.lock
+# Cargo.lock is NOT a process-lock file. Tauri is a binary crate and the
+# lockfile is conventionally committed for reproducible builds.
+!Cargo.lock
